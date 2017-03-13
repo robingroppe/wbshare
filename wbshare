@@ -1,0 +1,172 @@
+#!/bin/bash
+
+configdir="$HOME/.config/wbshare"
+log="$configdir/wbshare.log"
+config="$configdir/wbshare.conf"
+folder="$configdir/screens"
+
+timestamp="$(date +%s)"
+gnome_de="gnome-screenshot -a -f $timestamp.png"
+mate_de="$gnome_de"
+xfce_de="xfce4-screenshooter -r -o 'cat' > $timestamp.png"
+kde_de="spectacle -b -r -o $timestamp.png"
+file="$2"
+
+if [ -f "$config" ]
+	then
+  		source "$config"
+	else
+		echo "It seems that you are using wbshare for the first time. There are some configurations to be made."
+		read -p "Press Enter to continue... "
+		
+		mkdir -p $folder
+		echo -n > $config
+		
+		read -p "Chose your desktop environment between mate, gnome, xfce and kde: " _de
+		echo -e "# Used Desktop. Choose between gnome_de, mate_de, xfce_de and kde_de.\ndesktop=\"${_de}_de\"" >> $config
+		
+		read -p "Are you using SSH? If not you can use FTP. (Notice: If you are using SSH you have to login by key instead of password!) [yes/NO] " _ssh
+		case $_ssh in
+			yes|ja|y|j)
+				_ssh="true"
+				;;
+			*)
+				_ssh="false"
+				;;
+		esac
+		echo -e "# Enable SSH. If disabled FTP will be used.\nssh=\"$_ssh\"" >> $config
+		
+		echo -e "\n# Server settings\n# Upload" >> $config
+		
+		read -p "Hostname: " _host
+		echo "host=\"$_host\"" >> $config
+		
+		read -p "Username: " _user
+		echo "user=\"$_user\"" >> $config
+		
+		if [ "$_ssh" == "false" ];
+			then
+				read -p "Password: " _pass
+				echo "pass=\"$_pass\"" >> $config
+		fi
+		
+		read -p "Create 2 directories on your remote machine where you want to save your screenshots and uploaded files. When you are ready press Enter to continue... "
+		
+		read -p "Please give the full path to your screenshots directory (like /www/htdocs/screenshots): " _path
+		echo "path=\"$_path/\"" >> $config
+		
+		read -p "Please give the full path to your upload directory: " _file_path
+		echo "file_path=\"$_file_path/\"" >> $config
+		
+		echo "# Public" >> $config
+		
+		read -p "Public url to your screenshots directory (like https://your-domain.tld/screenshots): " _pub_url
+		echo "pub_url=\"$_pub_url/\"" >> $config
+		
+		read -p "Public url to your upload directory: " _pub_file_url
+		echo "pub_file_url=\"$_pub_file_url/\"" >> $config
+		
+		echo -e "\n# Screenshot settings" >> $config
+		
+		read -p "Do you want to keep the screenshots on your local machine? [yes/NO] " _keepscreens
+		case $_keepscreens in
+			yes|ja|y|j)
+				_keepscreens="true"
+				;;
+			*)
+				_keepscreens="false"
+				;;
+		esac
+		echo "keepscreens=\"$_keepscreens\"" >> $config
+		
+		read -p "Which clipboard do you want to use for the public url? [primary/secondary/clipboard]: " _clipboard
+		echo "clipboard=\"$_clipboard\"" >> $config
+		
+		echo -e "Your config was written to $config.\nPlease run wbshare again to make screenshots and upload files.\nHave fun!"
+		
+		exit 0
+fi
+
+function screenshot_upload
+{
+	if [ "$keepscreens" == "false" ]
+		then
+			cd "/tmp"
+		else
+			cd "$folder"
+	fi
+
+	case "$desktop" in
+		"gnome_de")
+			$gnome_de;
+		;;
+		"mate_de")
+			$mate_de;
+		;;
+		"xfce_de")
+			$xfce_de;
+		;;
+		"kde_de")
+			$kde_de;
+		;;
+		*)
+			echo -e "No valid desktop enviroment chosen. Check \"$config\"\nExit...";
+		;;
+		esac
+	if [ -e $timestamp.png ]
+		then
+			echo "Uploading..."
+			filename="$timestamp-$(sha1sum $timestamp.png | cut -d' ' -f1)"
+			if [ "$ssh" == "true" ]
+				then
+					scp $timestamp.png $user@$host:$path$filename.png
+				else
+					curl -T $timestamp.png -u $user:$pass ftp://$host$path$filename.png
+			fi
+			if [ "$keepscreens" == "false" ]
+				then
+					rm "$timestamp.png"
+			fi
+			echo "$(date) Screenshot $timestamp uploaded to URL: $pub_url$filename.png" | tee -a $log
+			echo -n "$pub_url$filename.png" | xclip -selection $clipboard
+			notify-send -t 3000 "Screenshot uploaded!"
+		else
+			echo -e "No screenshot has been taken.\nExit..."
+			exit 255
+	fi
+}
+
+function file_upload
+{
+	filename=$(echo "$file" | xargs | sed -e 's/[[:space:]]/%20/g' -e 's/^.*\/\([^\/]*\)$/\1/')
+	if [ -e "$file" ]
+		then
+			if [ "$ssh" == "true" ]
+				then
+					scp "$file" $user@$host:$file_path$filename
+				else
+					curl -T "$file" -u $user:$pass ftp://$host$file_path$filename
+			fi
+			echo "$(date) File $file uploaded to URL: $pub_file_url$file_path$filename" | tee -a $log
+			echo -n "$pub_file_url$filename" | xclip -selection $clipboard
+			echo "$filename uploaded!"
+			notify-send -t 3000 "File transfer complete!"
+		else
+			echo "File not found.\nExit..."
+			exit 255
+	fi
+}
+
+case "$1" in
+	"screenshot")
+		screenshot_upload;
+	;;
+	"file")
+		file_upload;
+	;;
+	*)
+		echo "Usage for screenshots: wbshare screenshot"
+		echo "Usage for file uploads: wbshare file [file...]"
+		exit 255
+	;;
+esac
