@@ -52,18 +52,18 @@ if [ -f "$config" ]
 		
 		read -p "Create 2 directories on your remote machine where you want to save your screenshots and uploaded files. When you are ready press Enter to continue... "
 		
-		read -p "Please give the full path to your screenshots directory (like /www/htdocs/screenshots): " _path
+		read -p "Please give the full or relative path to your screenshot directory used for the upload:(like /www/htdocs/screenshots): " _path
 		echo "path=\"$_path/\"" >> $config
 		
-		read -p "Please give the full path to your upload directory: " _file_path
+		read -p "Please give the full or relative path to your file directory used for the upload: " _file_path
 		echo "file_path=\"$_file_path/\"" >> $config
 		
 		echo "# Public" >> $config
 		
-		read -p "Public url to your screenshots directory (like https://your-domain.tld/screenshots): " _pub_url
+		read -p "Public URL to your screenshots directory (like https://your-domain.tld/screenshots): " _pub_url
 		echo "pub_url=\"$_pub_url/\"" >> $config
 		
-		read -p "Public url to your upload directory: " _pub_file_url
+		read -p "Public URL to your file directory: " _pub_file_url
 		echo "pub_file_url=\"$_pub_file_url/\"" >> $config
 		
 		echo -e "\n# Screenshot settings" >> $config
