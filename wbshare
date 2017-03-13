@@ -26,7 +26,7 @@ if [ -f "$config" ]
 		echo -e "# Used Desktop. Choose between gnome_de, mate_de, xfce_de and kde_de.\ndesktop=\"${_de}_de\"" >> $config
 		
 		read -p "Are you using SSH? If not you can use FTP. (Notice: If you are using SSH you have to login by key instead of password!) [yes/NO] " _ssh
-		case $_ssh in
+		case $(tr '[:upper:]' '[:lower:]' <<<$_ssh) in
 			yes|ja|y|j)
 				_ssh="true"
 				;;
@@ -69,7 +69,7 @@ if [ -f "$config" ]
 		echo -e "\n# Screenshot settings" >> $config
 		
 		read -p "Do you want to keep the screenshots on your local machine? [yes/NO] " _keepscreens
-		case $_keepscreens in
+		case $(tr '[:upper:]' '[:lower:]' <<<$_keepscreens) in
 			yes|ja|y|j)
 				_keepscreens="true"
 				;;
