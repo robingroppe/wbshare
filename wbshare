@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sleep 0.1
+
 configdir="$HOME/.config/wbshare"
 log="$configdir/wbshare.log"
 config="$configdir/wbshare.conf"
