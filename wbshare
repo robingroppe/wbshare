@@ -11,7 +11,7 @@ timestamp="$(date +%s)"
 gnome_de="gnome-screenshot -a -f $timestamp.png"
 mate_de="$gnome_de"
 xfce_de="xfce4-screenshooter -r -o 'cat' > $timestamp.png"
-kde_de="spectacle -b -r -o $timestamp.png"
+kde_de="spectacle -b -r -n -o $timestamp.png"
 file="$2"
 
 if [ -f "$config" ]
