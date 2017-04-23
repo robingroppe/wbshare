@@ -121,7 +121,7 @@ function screenshot_upload
 			filename="$timestamp-$(sha1sum $timestamp.png | cut -d' ' -f1)"
 			if [ "$ssh" == "true" ]
 				then
-					scp $timestamp.png $user@$host:$path$filename.png
+					sshpass -p "${pass}" scp $timestamp.png $user@$host:$path$filename.png
 				else
 					curl -T $timestamp.png -u $user:$pass ftp://$host$path$filename.png
 			fi
@@ -145,7 +145,7 @@ function file_upload
 		then
 			if [ "$ssh" == "true" ]
 				then
-					scp "$file" $user@$host:$file_path$filename
+					sshpass -p "${pass}" scp "$file" $user@$host:$file_path$filename
 				else
 					curl -T "$file" -u $user:$pass ftp://$host$file_path$filename
 			fi
