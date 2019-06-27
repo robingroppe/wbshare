@@ -8,11 +8,101 @@ config="$configdir/wbshare.conf"
 folder="$configdir/screens"
 
 timestamp="$(date +%s)"
-gnome_de="gnome-screenshot -a -f $timestamp.png"
-mate_de="$gnome_de"
-xfce_de="xfce4-screenshooter -r -o 'cat' > $timestamp.png"
-kde_de="spectacle -b -r -n -o $timestamp.png"
+
 file="$2"
+
+
+
+function gnome_de {
+	gnome-screenshot -a -f $timestamp.png
+}
+
+function mate_de {
+	gnome_de
+}
+
+function xfce_de {
+	tmpfile="$(xfce4-screenshooter -r -o echo)"
+	[ "$tmpfile" ] && mv $tmpfile $timestamp.png
+}
+
+function kde_de {
+	spectacle -b -r -o $timestamp.png
+}
+
+function deepin_de {
+	deepin-screenshot -s $timestamp.png
+}
+
+function scrot {
+	scrot -s -b $timestamp.png
+}
+
+
+
+function screenshot_upload
+{
+	if [ "$keepscreens" == "false" ]
+		then
+			cd "/tmp"
+		else
+			cd "$folder"
+	fi
+	
+	if [ "$desktop" ]
+		then $desktop
+		else echo "No valid desktop enviroment chosen. Check \"$config\"\nExit..."
+	fi
+		
+	
+	if [ -e $timestamp.png ]
+		then
+			echo "Uploading..."
+			filename="$timestamp-$(sha1sum $timestamp.png | cut -d' ' -f1)"
+			if [ "$ssh" == "true" ]
+				then
+					scp $timestamp.png $user@$host:$path$filename.png
+				else
+					curl -T $timestamp.png -u $user:$pass ftp://$host$path$filename.png
+			fi
+			if [ "$keepscreens" == "false" ]
+				then
+					rm "$timestamp.png"
+			fi
+			echo "$(date) Screenshot $timestamp uploaded to URL: $pub_url$filename.png" | tee -a $log
+			echo -n "$pub_url$filename.png" | xclip -selection $clipboard
+			notify-send -t 3000 "Screenshot uploaded!"
+		else
+			echo -e "No screenshot has been taken.\nExit..."
+			exit 255
+	fi
+}
+
+
+
+function file_upload
+{
+	filename=$(echo "$file" | xargs | sed -e 's/[[:space:]]/%20/g' -e 's/^.*\/\([^\/]*\)$/\1/')
+	if [ -e "$file" ]
+		then
+			if [ "$ssh" == "true" ]
+				then
+					scp "$file" $user@$host:$file_path$filename
+				else
+					curl -T "$file" -u $user:$pass ftp://$host$file_path$filename
+			fi
+			echo "$(date) File $file uploaded to URL: $pub_file_url$filename" | tee -a $log
+			echo -n "$pub_file_url$filename" | xclip -selection $clipboard
+			echo "$filename uploaded!"
+			notify-send -t 3000 "File transfer complete!"
+		else
+			echo "File not found.\nExit..."
+			exit 255
+	fi
+}
+
+
+
 
 if [ -f "$config" ]
 	then
@@ -24,8 +114,8 @@ if [ -f "$config" ]
 		mkdir -p $folder
 		echo -n > $config
 		
-		read -p "Chose your desktop environment between mate, gnome, xfce and kde: " _de
-		echo -e "# Used Desktop. Choose between gnome_de, mate_de, xfce_de and kde_de.\ndesktop=\"${_de}_de\"" >> $config
+		read -p "Choose your desktop environment between mate, gnome, xfce, kde, deepin or any other desktop using scrot: " _de
+		echo -e "# Used Desktop. Choose between gnome_de, mate_de, xfce_de, kde_de, deepin_de or scrot.\ndesktop=\"${_de}_de\"" >> $config
 		
 		read -p "Are you using SSH? If not you can use FTP. (Notice: If you are using SSH you have to login by key instead of password!) [yes/NO] " _ssh
 		case $(tr '[:upper:]' '[:lower:]' <<<$_ssh) in
@@ -54,18 +144,18 @@ if [ -f "$config" ]
 		
 		read -p "Create 2 directories on your remote machine where you want to save your screenshots and uploaded files. When you are ready press Enter to continue... "
 		
-		read -p "Please give the full or relative path to your screenshot directory used for the upload:(like /www/htdocs/screenshots): " _path
+		read -p "Please give the full path to your screenshots directory (like /www/htdocs/screenshots): " _path
 		echo "path=\"$_path/\"" >> $config
 		
-		read -p "Please give the full or relative path to your file directory used for the upload: " _file_path
+		read -p "Please give the full path to your upload directory: " _file_path
 		echo "file_path=\"$_file_path/\"" >> $config
 		
 		echo "# Public" >> $config
 		
-		read -p "Public URL to your screenshots directory (like https://your-domain.tld/screenshots): " _pub_url
+		read -p "Public url to your screenshots directory (like https://your-domain.tld/screenshots): " _pub_url
 		echo "pub_url=\"$_pub_url/\"" >> $config
 		
-		read -p "Public URL to your file directory: " _pub_file_url
+		read -p "Public url to your upload directory: " _pub_file_url
 		echo "pub_file_url=\"$_pub_file_url/\"" >> $config
 		
 		echo -e "\n# Screenshot settings" >> $config
@@ -89,75 +179,8 @@ if [ -f "$config" ]
 		exit 0
 fi
 
-function screenshot_upload
-{
-	if [ "$keepscreens" == "false" ]
-		then
-			cd "/tmp"
-		else
-			cd "$folder"
-	fi
 
-	case "$desktop" in
-		"gnome_de")
-			$gnome_de;
-		;;
-		"mate_de")
-			$mate_de;
-		;;
-		"xfce_de")
-			$xfce_de;
-		;;
-		"kde_de")
-			$kde_de;
-		;;
-		*)
-			echo -e "No valid desktop enviroment chosen. Check \"$config\"\nExit...";
-		;;
-		esac
-	if [ -e $timestamp.png ]
-		then
-			echo "Uploading..."
-			filename="$timestamp-$(sha1sum $timestamp.png | cut -d' ' -f1)"
-			if [ "$ssh" == "true" ]
-				then
-					sshpass -p "${pass}" scp $timestamp.png $user@$host:$path$filename.png
-				else
-					curl -T $timestamp.png -u $user:$pass ftp://$host$path$filename.png
-			fi
-			if [ "$keepscreens" == "false" ]
-				then
-					rm "$timestamp.png"
-			fi
-			echo "$(date) Screenshot $timestamp uploaded to URL: $pub_url$filename.png" | tee -a $log
-			echo -n "$pub_url$filename.png" | xclip -selection $clipboard
-			notify-send -t 3000 "Screenshot uploaded!"
-		else
-			echo -e "No screenshot has been taken.\nExit..."
-			exit 255
-	fi
-}
 
-function file_upload
-{
-	filename=$(echo "$file" | xargs | sed -e 's/[[:space:]]/%20/g' -e 's/^.*\/\([^\/]*\)$/\1/')
-	if [ -e "$file" ]
-		then
-			if [ "$ssh" == "true" ]
-				then
-					sshpass -p "${pass}" scp "$file" $user@$host:$file_path$filename
-				else
-					curl -T "$file" -u $user:$pass ftp://$host$file_path$filename
-			fi
-			echo "$(date) File $file uploaded to URL: $pub_file_url$file_path$filename" | tee -a $log
-			echo -n "$pub_file_url$filename" | xclip -selection $clipboard
-			echo "$filename uploaded!"
-			notify-send -t 3000 "File transfer complete!"
-		else
-			echo "File not found.\nExit..."
-			exit 255
-	fi
-}
 
 case "$1" in
 	"screenshot")
