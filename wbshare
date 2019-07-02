@@ -31,7 +31,7 @@ function kde_de {
 }
 
 function deepin_de {
-	deepin-screenshot -s $timestamp.png
+	deepin-screenshot -n -s $timestamp.png
 }
 
 function scrot {
