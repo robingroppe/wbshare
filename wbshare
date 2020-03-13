@@ -220,7 +220,7 @@ case "$1" in
 	;;
 	*)
 		echo "Usage for screenshots: wbshare screenshot [-de <DESKTOP ENVIRONMENT>]"
-		echo "Usage for file uploads: wbshare file [file...]"
+		echo "Usage for file uploads: wbshare file <FILENAME>"
 		exit 255
 	;;
 esac
