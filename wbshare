@@ -156,7 +156,11 @@ function screenshot_upload
 			filename="$timestamp-$(sha1sum $tmpfile | cut -d' ' -f1)"
 			if [ "$ssh" == "true" ]
 				then
-					scp $tmpfile $user@$host:$path$filename.png
+					scp $tmpfile $user@$host:$path$filename.png || (
+                        notify-send -t 3000 "Screenshot could not be uplaoded. Please check your SSH-settings."
+                        mv $tmpfile not-uploaded-$tmpfile
+                        exit 255
+					)
 				else
 					curl -T $tmpfile -u $user:$pass ftp://$host$path$filename.png
 			fi
@@ -184,7 +188,10 @@ function file_upload
 		then
 			if [ "$ssh" == "true" ]
 				then
-					scp "$file" $user@$host:$file_path$filename
+					scp "$file" $user@$host:$file_path$filename || (
+                        notify-send -t 3000 "File could not be uplaoded. Please check your SSH-settings."
+                        exit 255
+					)
 				else
 					curl -T "$file" -u $user:$pass ftp://$host$file_path$filename
 			fi
