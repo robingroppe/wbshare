@@ -157,7 +157,7 @@ function screenshot_upload
 			if [ "$ssh" == "true" ]
 				then
 					scp $tmpfile $user@$host:$path$filename.png || (
-						notify-send -t 3000 "Screenshot could not be uplaoded. Please check your SSH-settings."
+						notify-send -t 3000 "Screenshot could not be uploaded. Please check your SSH-settings."
 						mv $tmpfile not-uploaded-$tmpfile
 						exit 255
 					)
@@ -189,7 +189,7 @@ function file_upload
 			if [ "$ssh" == "true" ]
 				then
 					scp "$file" $user@$host:$file_path$filename || (
-						notify-send -t 3000 "File could not be uplaoded. Please check your SSH-settings."
+						notify-send -t 3000 "File could not be uploaded. Please check your SSH-settings."
 						exit 255
 					)
 				else
